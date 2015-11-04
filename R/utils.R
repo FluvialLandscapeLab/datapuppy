@@ -1,36 +1,74 @@
-ICFAddElement = function(node, childName, element) {
-  node[[childName]] = XML::addChildren(node[[childName]], element)
-  return(node)
-}
+# ICFAddElement = function(node, ICFTagName, element) {
+#   eval(ICFPart("node", ICFTagName)) = XML::addChildren(eval(ICFPart("node", ICFTagName)), element)
+#   return(node)
+# }
 
 ICFAttributeName = function(elementType, attributeTag) {
-  attributeNames = ICFTag(paste0(elementType, ".attr"))
+  attributeNames = ICFGetTag(paste0(elementType, ".attr"))
   attributeName = attributeNames[[attributeTag]]
   if(is.null(attributeName)) {
-    stop(paste0("Invalid attributeTag '", attributeTag, ".'  To designate attributes of ", ICFTag(elementType),", use: \n   '", paste0(names(attributeNames), "' to refer to ", attributeNames, collapse = ",\n   '")))
+    stop(paste0("Invalid attributeTag '", attributeTag, ".'  To designate attributes of ", ICFGetTag(elementType),", use: \n   '", paste0(names(attributeNames), "' to refer to ", attributeNames, collapse = ",\n   '")))
   }
   return(attributeName)
 }
 
-ICFForeignKeys = function() {
-  keys = getOption("loggerbase.db.foreignKeys")
-  if(is.null(keys)) stop("The foreignKeys for the data table have not been set.  Use datapuppyConnect() to connect to your database.")
+ICFCheckPath = function(path) {
+  fullPath = normalizePath(path, "/", FALSE)
+  if(file_test("-f", fullPath)) {
+    stop("'", path, "' appears to refer to a file.  It must be a folder.")
+  }
+  if(!file_test("-d", fullPath)) {
+    stop("'", path, "' is not a valid folder name.")
+  }
+  return(fullPath)
 }
 
-ICFImpdefNames = function(node) {
-  unlist(XML::xmlApply(node[[ICFTag("impdefs")]], XML::xmlName))
+ICFCheckForeignKeyValue = function(keyValue) {
+  datasetInteger = suppressWarnings(as.integer(keyValue))
+
+  if(any(is.na(datasetInteger) | is.na(keyValue))) {
+    stop("Foreign Key Value must be a positive, whole number.")
+  }
+
+  if(any((datasetInteger != keyValue) | (datasetInteger < 0)) | (length(datasetInteger) > 1) ) {
+    stop("Foreign Key Value must be a positive, whole number.")
+  }
+
+  return(as.character(keyValue))
 }
-ICFImpdefAttrNames = function() {
-  return(getOption("loggerbase.impdefs.attr"))
-}
+
+# ICFForeignKeys = function() {
+#   keys = getOption("datapuppy.db.foreignKeys")
+#   if(is.null(keys)) stop("The foreignKeys for the data table have not been set.  Use datapuppyConnect() to connect to your database.")
+# }
 
 ICFFileAttributeNames = function() {
-  return(getOption("loggerbase.files.attr"))
+  return(c(name = "file", impdef = "importdef", chksum = "checksum"))
+}
+
+ICFTweakAttributeNames = function() {
+  return(c(command = "rCommand", why = "comment"))
+}
+
+ICFDatasetAttributeNames = function() {
+  return(c(file = "importfile", datasetKey = "datasetforeignkey", firstLoadTime = "firstloaded", lastLoadTime = "lastloaded"))
+}
+
+ICFOrderAttributeNames = function() {
+  return(c(ordervalue = "order"))
+}
+
+# ICFImpdefNames = function(node) {
+#   names(node[[ICFGetTag("impdefs")]])
+# }
+
+ICFImpdefAttributeNames = function() {
+  return(c(name = "name", fun = "rCommand"))
 }
 
 ICFPrimaryElementNames = function() {
     sectionTags = ICFPrimaryElementTags()
-    sectionNames = lapply(sectionTags, ICFTag)
+    sectionNames = lapply(sectionTags, ICFGetTag)
     names(sectionNames) = sectionTags
     return(sectionNames)
 }
@@ -38,42 +76,37 @@ ICFPrimaryElementNames = function() {
 ICFPrimaryElementTags = function() {
   ## These data are not in options becuase they are immutable.  These tags are
   ## hardwired throughout the code.  You may add to this list, but do not change
+  ## any existing values unless you search and replace the values throughout the
+  ## code.
+  return(c("path", "impdefs", "files", "sets"))
+}
+
+ICFDatasetElementTags = function() {
+  ## These data are not in options becuase they are immutable.  These tags are
+  ## hardwired throughout the code.  You may add to this list, but do not change
   ## any existing values.
-  return(list("path", "impdefs", "files", "deps"))
+  return(c("keys", "tweaks"))
 }
 
 ICFRootName = function() {
-  return(getOption("loggerbase.root"))
+  return(getOption("datapuppy.root"))
 }
 
-ICFTag = function(tagVar) {
-  return(getOption(paste0("loggerbase.", tagVar)))
-}
 
-ICFElements = function(node, elementType, searchValue="*", attributeTag = NULL) {
-  if(is.null(attributeTag)) {
-    xpath = paste0("/", ICFTag("root"), "/", ICFTag(elementType), "/", searchValue)
-  } else {
-    attributeName = ICFAttributeName(elementType, attributeTag)
-    xpath = paste0("/", ICFTag("root"), "/", ICFTag(elementType), "/*[@", attributeName, "='", searchValue, "']")
-  }
-  return(XML::getNodeSet(node, xpath))
-}
-
-ICFImportDefParams = function(node, importDefName) {
-  importDef = ICFElements(node, "impdefs", importDefName)
-  if(length(importDef) == 0) {
-    stop(paste0("No importdef named '", importDefName, "' was found."))
-  }
-  if(length(importDef) > 1) {
-    stop(paste0("More than one importdef named '", importDefName), "' exists.")
-  }
-  importDefList = ICFElementsAsList(importDef[[1]])
-  importDefList[sapply(importDefList, "==", y = ")NA(")] = list(NA)
-  ## check for NULL last or error results
-  importDefList[sapply(importDefList, "==", y = ")NULL(")] = list(NULL)
-  return(importDefList)
-}
+# ICFImportDefParams = function(node, importDefName) {
+#   importDef = ICFElements(node, ICFGetTag("impdefs"), importDefName)
+#   if(length(importDef) == 0) {
+#     stop(paste0("No importdef named '", importDefName, "' was found."))
+#   }
+#   if(length(importDef) > 1) {
+#     stop(paste0("More than one importdef named '", importDefName), "' exists.")
+#   }
+#   importDefList = ICFElementsAsList(importDef[[1]])
+#   importDefList[sapply(importDefList, "==", y = ")NA(")] = list(NA)
+#   ## check for NULL last or error results
+#   importDefList[sapply(importDefList, "==", y = ")NULL(")] = list(NULL)
+#   return(importDefList)
+# }
 
 ICFElementsAsList = function(node) {
   children = XML::xmlChildren(node)
@@ -101,7 +134,7 @@ ICFNormalizeFilename = function(node, filename, relative = T) {
 
     #if the file doesn't exist or is not in the basePath, throw an error.
     if( (!file_test("-f", normalizedFilename)) || (substring(normalizedFilename, 1, nchar(basePath)) != basePath) ) {
-      stop(paste0("Path ", filename, " doesn't exist in the base directory of the input control file or in the R working directory."))
+      stop("File '", filename, "' must exist, and must be located in '", basePath, "'.")
     }
   }
   if(relative) {
@@ -114,12 +147,12 @@ ICFNormalizeFilename = function(node, filename, relative = T) {
 }
 
 ICFPath = function(node) {
-  XML::xmlValue(node[[ICFTag("path")]])
+  XML::xmlValue(node[[ICFGetTag("path")]])
 }
 
 ICFUpdateElement = function(node, elementType, searchValue, newValue, attributeTag = NULL) {
   # get all of the nodes for the elementType
-  defs = ICFElements(node, elementType)
+  defs = XML::xmlChildren(node[[ICFGetTag(elementType)]])
   if(length(defs) == 0) {
     stop(paste0("No ", elementType," found in XML node."))
   }
@@ -159,7 +192,7 @@ ICFUpdateElement = function(node, elementType, searchValue, newValue, attributeT
             XML::xmlName(td) = newValue
           } else {
             attrs = XML::xmlAttrs(td)
-            attrs[ICFTag(paste0(elementType, ".attr"))[[attributeTag]] ] = newValue
+            attrs[ICFGetTag(paste0(elementType, ".attr"))[[attributeTag]] ] = newValue
             XML::xmlAttrs(td) = attrs
           }
           return(td)
@@ -169,7 +202,7 @@ ICFUpdateElement = function(node, elementType, searchValue, newValue, attributeT
     defs[idx] = targetdefs
   }
   # within the root node, replace the elementType node with the updated elements
-  node[[ICFTag(elementType)]] = XML::xmlNode(ICFTag(elementType), .children = defs)
+  node[[ICFGetTag(elementType)]] = XML::xmlNode(ICFGetTag(elementType), .children = defs)
   return(node)
 
 }
