@@ -3,6 +3,7 @@
 #   return(node)
 # }
 
+# Called by ICFUpdateElement, which is currently called only from commented code
 ICFAttributeName = function(elementType, attributeTag) {
   attributeNames = ICFGetTag(paste0(elementType, ".attr"))
   attributeName = attributeNames[[attributeTag]]

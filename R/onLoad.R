@@ -31,17 +31,23 @@ NULL
     datapuppy.sets.tweakorders = "tweakorders",
     datapuppy.sets.tweaks.attr = list(activate = "added", deactivate = "removed"),
 
-#     datapuppy.db.reqDataFields = c("rawID", "sourceID", "metricID", "time", "value"),
-#     datapuppy.db.reqSourceFields = c("sourceID", "sourceDescription", "rawDataFile"),
-#     datapuppy.db.reqMetricFields = c("metricID", "metricDescription"),
+    datapuppy.db.reqObservationFields = c(observationID = "ObservationIDX",
+                                          observationDateTime = "ObservationTime",
+                                          datasetID = "DeploymentIDX",
+                                          metricID = "MetricIDX",
+                                          value = "Value"
+                                          ),
+    datapuppy.db.reqDatasetFields = c(datasetID = "DeploymentIDX",
+                                      datasetName = "DeploymentName",
+                                      datafileSource = "rawDataFile"
+                                      ),
+    datapuppy.db.reqMetricFields = c(metricID = "MetricIDX",
+                                     metricName = "MetricName"
+                                     ),
     datapuppy.db.setTable = NULL,
     datapuppy.db.metricTable = NULL,
     datapuppy.db.dataTable = NULL,
-#     datapuppy.db.sourceFields = NULL,
-#     datapuppy.db.dataFields = NULL,
-#     datapuppy.db.metricFields = NULL,
-    datapuppy.db.user = NULL,
-    datapuppy.db.password = NULL
+    datapuppy.db.dsn = NULL
 
 #    datapuppy.xmlNodes = list(root = "datapuppy", path = "defaultpath", files = "files", importdefs = "importdefs"),
 #    datapuppy.elementNames = list(files = "file", importdefs = "importdef", corrections = "correction"),
