@@ -2,10 +2,21 @@
 
 #filename = "C:\\Users\\goff\\Documents\\R Projects\\datapuppy\\example2.xml"
 
-#' Read an input control file for processing
+#' Input Control File Nodes
+#'
+#' \code{Input control files (ICF) nodes} are \code{XML nodes} (see the
+#' \code{XML} package documentation) that contain the information necessary for
+#' \code{datapuppy} to create a database from raw data files.  The functions
+#' documented here allow initial creation of an \code{ICF node} in memory, by
+#' either reading a previously saved \code{ICF node} from a file or by creating
+#' a blank \code{ICF node} template from scratch.
 #'
 #' @param file Name of the import control file to read.
-#' @return The contents of the import control file as an XMLNode object (see XML package documentation)
+#' @param path An optional root path that will be appended to datafile names in
+#'   the input control file.
+#' @return The contents of the import control file as an XMLNode object (see XML
+#'   package documentation)
+#'
 #' @export
 readICFNode = function(file) {
   doc = XML::xmlTreeParse(file)
@@ -17,10 +28,7 @@ readICFNode = function(file) {
   return(node)
 }
 
-#' Create Import Control File as an XML node.
-#'
-#' @param path An optional root path that will be appended to datafile names in the input control file.
-#' @return An XMLNode object (see XML package documentation) that represents the skeleton of an empty input control file.
+#' @rdname readICFNode
 #' @export
 createICFNode = function(path) {
 
@@ -82,13 +90,13 @@ getDatafileSet = function(node, searchValue = NULL, attributeName = NULL) {
 ###### COLUMN DEFINITIONS ##############################f
 
 #' @export
-addImportDef = function(node, impdefName, rImportCommand) {
+addImportDef = function(node, impdefName, rImportCommand, importParameters = NULL) {
   if(impdefName %in% ICFAttributeValues(node, ICFGetTag("impdefs"), ICFImpdefAttributeNames()["name"])) {
     stop(paste0("An importdef by the name of '", impdefName, "' has already been defined."))
   }
   attributeVector = c(impdefName, rImportCommand)
   names(attributeVector) = ICFImpdefAttributeNames()
-  return(ICFAdd(node, ICFGetTag("impdefs"), attributeVector))
+  return(ICFAdd(node, ICFGetTag("impdefs"), attributeVector, children = importParameters))
 }
 
 #' @export
@@ -100,7 +108,7 @@ removeImportDef = function(node, impdefName) {
     fileNamesUsingImportDef = sapply(ICFElements(node, ICFGetTag("files"), searchValue = impdefName, attributeName = ICFFileAttributeNames()["impdef"]), function(x) XML::xmlAttrs(x)[ICFFileAttributeNames()["name"]])
     stop(paste0("Can't remove importdef '", impdefName, "' because it is used by the following data file(s):\n    ", paste(fileNamesUsingImportDef, collapse = ",\n    "),"\n"))
   }
-  return(ICFRemove(node, ICFGetTag("impdefs"), impdefName, ICFImpdefAttributeNames()["name"]))
+  return(ICFRemove(node, ICFGetTag("impdefs"), impdefName, attributeName =  ICFImpdefAttributeNames()["name"]))
 }
 
 getImportDefSet = function(node, searchValue = NULL, attributeName = NULL) {

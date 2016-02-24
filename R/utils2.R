@@ -1,11 +1,14 @@
-ICFAdd = function(node, ICFTag, attrs = NULL, children = list(), parentElements = NULL, activate = TRUE, timeAdded = ICF.XMLTime()) {
+ICFAdd = function(node, ICFTag, attrs = NULL, children = list(), parentElements = NULL, activate = TRUE, timeAdded = ICF.XMLTime(), childrenAsNodes = FALSE) {
   newElementName = ICFNextValue(node, ICFTag, parentElements)
   if(activate){
-    added = ICF.XMLTime()
+    added = timeAdded
   } else {
     added = ""
   }
   attrs = c(attrs, added = added, removed = "")
+  if(childrenAsNodes) {
+    children = mapply(XML::xmlNode, name = names(children), children, SIMPLIFY = FALSE)
+  }
   newElement = XML::xmlNode(newElementName, attrs = attrs, .children = children)
   tagPath = ICFTagPath(ICFTag, parentElements = parentElements)
   node = ICFUpdate(node, tagPath, newElement, replace = F)
