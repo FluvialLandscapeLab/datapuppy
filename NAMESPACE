@@ -1,3 +1,5 @@
 exportPattern("^[[:alpha:]]+")
 
 importClassesFrom(XML,XMLNode)
+importFrom(RODBC,odbcDriverConnect)
+importFrom(RODBC,odbcConnect)

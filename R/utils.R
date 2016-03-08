@@ -13,17 +13,6 @@ ICFAttributeName = function(elementType, attributeTag) {
   return(attributeName)
 }
 
-ICFCheckPath = function(path) {
-  fullPath = normalizePath(path, "/", FALSE)
-  if(file_test("-f", fullPath)) {
-    stop("'", path, "' appears to refer to a file.  It must be a folder.")
-  }
-  if(!file_test("-d", fullPath)) {
-    stop("'", path, "' is not a valid folder name.")
-  }
-  return(fullPath)
-}
-
 ICFCheckForeignKeyValue = function(keyValue) {
   datasetInteger = suppressWarnings(as.integer(keyValue))
 

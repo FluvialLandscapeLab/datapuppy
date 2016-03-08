@@ -32,7 +32,7 @@ readICFNode = function(file) {
 #' @export
 createICFNode = function(path) {
 
-  fullPath = ICFCheckPath(path)
+  fullPath = dpCheckPath(path)
 
   ## Create the children nodes
   children = lapply(ICFPrimaryElementNames(), XML::xmlNode)
@@ -46,7 +46,7 @@ createICFNode = function(path) {
 
 #' @export
 updatePath = function(node, path) {
-  ICFCheckPath(path)
+  dpCheckPath(path)
   pathElement = node[[ICFGetTag("path")]]
   XML::xmlValue(pathElement) = path
   pathPath = ICFTagPath("path")
@@ -88,6 +88,27 @@ getDatafileSet = function(node, searchValue = NULL, attributeName = NULL) {
 }
 
 ###### COLUMN DEFINITIONS ##############################f
+
+#' Manage Import Definitions
+#'
+#' Import definitions are added to an Import Control File (ICF) to store the
+#' description of a command that can be used to create a dataframe from a raw
+#' data file.
+#'
+#' Importing data from a file into R presumes knowledge of the file format.  Yet
+#' so long as datafiles share the same format, they are be imported with the
+#' same function.  Import Definition are, in essence, descriptions of a function
+#' that can be used to import a datafile of a particular format.  Once
+#' specified, the Import Definition can be referenced by any file specification
+#' in the ICF (see \code{addDatafile()} as a means of creating file
+#' specifications in an ICF)
+#'
+#' @param node An ICF node to which the Import Definition will be added
+#' @param impdefName A string the uniquely identified the Import Definition
+#' @param rImportCommand The name (as a string, without parenthesis at the end)
+#'   of the function to run to import a datafile.  This function should have a
+#'   parameter called "filename" and must return a dataframe.
+#' @param importParameters A named list of parameters OTHER THAN THE \code{filename} PARAMETER to be passed to
 
 #' @export
 addImportDef = function(node, impdefName, rImportCommand, importParameters = NULL) {

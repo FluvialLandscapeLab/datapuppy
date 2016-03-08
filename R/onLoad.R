@@ -1,4 +1,6 @@
 #' @importClassesFrom XML XMLNode
+#' @importFrom RODBC odbcDriverConnect
+
 NULL
 
 .onLoad <- function(libname, pkgname) {
