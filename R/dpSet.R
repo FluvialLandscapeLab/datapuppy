@@ -1,16 +1,9 @@
 #' Create and manage datapuppy \code{sets} and \code{batches}
 #'
-#' Datapuppy \code{sets} are collections of data \code{batches} to be loaded
-#' into a single database.  \code{Batches} are collections of records derived
-#' from a single data file (e.g., a data file downloaded from a data logger or a
-#' spreadsheet that contains field observations).
-#'
-#' \code{Sets} are collections of data \code{batches}.  The concept of a
-#' \code{set} was developed assuming that a \code{set} would represent all of
-#' the data stored in a particular database.  Thus, each \code{set} is always
-#' associated with a single database.  (Technically, however, there is no reason
-#' a single database couldn't be associated with and contain multiple
-#' \code{sets}.)
+#' Datapuppy \code{Batches} are collections of records derived from a single
+#' data file (e.g., a data file downloaded from a data logger or a spreadsheet
+#' that contains field observations).  Datapuppy \code{sets} are collections of
+#' data \code{batches} to be loaded into a single database.
 #'
 #' A \code{batch} is a collection of data points that have been imported from a
 #' single data file.  For instance, when a data logger is downloaded, it creates
@@ -18,8 +11,34 @@
 #' several different metrics. All (or a subset) of those observations can be
 #' collected into a \code{batch}.
 #'
-#' Note that datapuppy makes a few assumptions about the columns in the
-#' \code{batchesTable}, \code{dataTable}, and \code{typesTable} of the database:
+#' A \code{set} is a collections of data \code{batches}.  A \code{set} is a
+#' collection of all of the \code{batches} stored in a particular database.
+#' Thus, each \code{set} is always associated with a single database.
+
+#' \code{dpSets} and \code{dpBatches} are S3 objects built atop \code{lists}.
+#' \code{dpSet} objects contains information about a \code{set} and the database
+#' associate with the \code{set}.  \code{dpBatch} objects contain information
+#' about the \code{batch} and the \code{set} to which the \code{batch} belongs.
+#'
+#' Because \code{dpSets} (and \code{dpBatches}) are \code{lists}, information in a
+#' \code{dpSet} (\code{dpBatch}) can be accessed with the $ operator.  For
+#' instance, given a \code{set} named \code{mySet},
+#' \code{mySet$db$keys$dataPrimaryKey} would return the name of the primary key
+#' column for the data table in the database. Generally, tho, the user should
+#' not have to investigate the contents of a \code{dpSet} (\code{dpBatch})
+#' object. Instead, call \code{dpSet()} (\code{dpBatch}) to create the S3
+#' object, store the object in a variable, and pass the variable to other
+#' functions.
+#'
+#' Note that datapuppy makes a few assumptions about the database into which
+#' batches are loaded.  There must be a "batch" table where each record contains
+#' infomation about a \code{batch} loaded into the database.  There must be a
+#' "data" table where each record is a single datum.  And there must be a
+#' "types" table where each record describes a metric that can be assoicated
+#' with any datum (e.g., the datum represents a temperature reading, a wind
+#' speed, a stock price, or whatever metrics are traked by the database). The
+#' columns in the \code{batchesTable}, \code{dataTable}, and \code{typesTable}
+#' of the database have some requirements:
 #'
 #' 1) Each table must contain an autonumber field that is designated as the
 #' primary key for the table
@@ -27,24 +46,37 @@
 #' 2) the \code{dataTable} must contain at least two foreign keys, one that
 #' refers to and is named the same as the primary key column of the
 #' \code{batchesTable}, and one that refers to and is named the same as the
-#' primary key column of the \code{typesTable}.
+#' primary key column of the \code{typesTable}.  In this way, each datum is
+#' associated with a \code{batch} that describes the source of the datum and
+#' with a \code{datatype} that describes what the number represents.
 #'
-#' \code{dpCheckSet} reads the set stored at \code{setPath} and compares the
-#' parameters used to create the stored set the the parameters required by
-#' \code{dpSet()}.
+#' @details \code{dpSet()} (\code{dpBatch()}) creates a file called
+#'   "dpSet.rData" ("dpBatch.rData") in the location specified by \code{setPath}
+#'   (\code{\link{file.path}(set$setPath, batchRecord$batchName)}). The file
+#'   contains a list of the arguments passed to \code{dpSet()}
+#'   (\code{dpBatch()}).  When a \code{set} (\code{batch}) is reloaded from disk
+#'   using \code{dpLoadSet()} (code{dpLoadBatch()}), the list of the arguments
+#'   is used to recreate the \code{dpSet} (\code{dpBatch}).
 #'
-#' @param setPath A character string containing the path to the folder that will
-#'   house the \code{set}.  The folder must exist and be empty when a new
-#'   \code{set} is created.  The path can be fully specified or relative to the
-#'   R working directory.
-#' @param conndectionParams A \code{dpConnectionParams} object returned from
-#'   \code{\link{dpConnectionParams()}} describing the location and credentials
+#' @param setPath A character string containing the path to the \code{set} (\code{batch})
+#'   directory.  This directory contains the \code{"dpSet.rData"} (]code{"dpBatch.rData}) file and a subfolder
+#'   for each \code{batch} included in the \code{set}.  The folder must exist and be
+#'   empty when a \code{set} is created using \code{dpSet()}.  If passed to
+#'   other functions as a 'set' argument, the folder specified by \code{setPath}
+#'   must contain a 'dpSet.rData' file.  If a path is not fully specified, it is
+#'   assumed to be a subdirectory of the R working directory (see
+#'   \code{\link{getwd}}).
+#' @param batchPath same as setPath, above.
+#' @param validate A boolean determining whether names in the argument list are
+#'   validated against \code{\link{formals}(dpSet)} or
+#'   \code{\link{formals}(dpBatch)}.
+#' @param conndectionArgs A \code{dpConnectionArgs} object returned from
+#'   \code{\link{dpConnectionArgs()}} describing the location and credentials
 #'   for the database associated with a \code{set}.
-#' @param batchRowColumnName A character string containing the name of a
-#'   column in the \code{dataTable} of the database; the column is used to store
-#'   the row number of the \code{dataValues data.frame} that was the source of
-#'   the datum.  (See \code{\link{dpBatch}} for more information on the
-#'   \code{dataValues data.frame}).
+#' @param batchRowColumnName A character string containing the name of a column
+#'   in the \code{dataTable} of the database; the column is used to store the
+#'   row number of the \code{dataValues data.frame} that was the source of the
+#'   datum.
 #' @param batchNameColumnName A character string containing the name of a column
 #'   in the \code{batchTable} of the database that stores a unique name for the
 #'   batch.  This name should be meaningful to a human to identify the batch,
@@ -56,18 +88,26 @@
 #'   \code{dataTable} in the database.
 #' @param typesTableName A character string containing the name of the
 #'   \code{typesTable} in the database.
-#' @return \code{dpSet()} returns a dpSet object that references both the
-#'   storage location (file folder) of the \code{set} and the database
-#'   associated with the \code{set}.  This object should be assigned to a
-#'   variable so that it can be passed to datapuppy functions that help manage
-#'   \code{batches} within the \code{set}.  Note that \code{dbSet()} also saves
-#'   a copy of the parameters passed to \code{dpSet()} (technically, it saves the
-#'   results of \code{as.list(match.call())}) to a file called "dpSet.rData" in
-#'   the folder specified by \code{setPath}.
+#' @param batchRecord A named \code{list} of values describing the \code{batch}.
+#'   Values in the \code{batchRecord} are stored as a record in the batches
+#'   table. \code{Names} attribute of \code{batchRecord} must contain the name
+#'   of the database table column where each value is to be stored.
+#' @param set A \code{\link{dpSet}} object describing the \code{set} to be
+#'   operated on (or the \code{set} to which a batch will be added).
+#'   Alternatively, a setPath (see 'setPath' argument in \code{\link{dpSet}})
+#'   from which a set will be loaded.
+#' @param dataValues A \code{data.frame} with the values that are to be loaded
+#'   into the database.
+#' @param x An object to be tested.
+#' @return \code{dpSet()} (\code{dpBatch()} returns a \code{dpSet}
+#'   (\code{dpBatch}) object that describes the \code{set} (\code{batch}). This
+#'   object should be assigned to a variable so that it can be passed to other
+#'   datapuppy functions.  The arguments passed to \code{dpSet()}
+#'   (\code{dpBatch()}) are also saved in a file on disk (see Details, above).
 #' @export
 dpSet = function(
   setPath,
-  connectionParams,
+  connectionArgs,
   batchRowColumnName,
   datumValueColumnName,
   datumTypeColumnName,
@@ -81,117 +121,38 @@ dpSet = function(
     stop("A Datapuppy 'set' can not be created in '", setPath, "' because the folder is not empty.  Please choose an empty folder to create a new 'set.'")
   }
 
-  # make a list of the parameters passed to this function
-  paramList = as.list(match.call())
-  paramList = paramList[2:(length(paramList))]
+  # make a list of the arguments passed to this function
+  argList = as.list(match.call())
+  argList = argList[2:(length(argList))]
 
-  newSet = .dpSetFromParamList(paramList)
+  newSet = .dpSetFromArgList(argList)
 
-  #The parameter list generated by as.list(match.call()) puts the name of the
-  #connectionParams object in the list of arguments, rather than the object
-  #itself. So we put the object in the parameter list before saving it to
+  #The argument list generated by as.list(match.call()) puts the name of the
+  #connectionArgs object in the list of arguments, rather than the object
+  #itself. So we put the object in the argument list before saving it to
   #disk.
-  paramList$connectionParams = connectionParams
+  argList$connectionArgs = connectionArgs
 
-  #Save the parameters to disk so that we can regenerate the set at any time using
+  #Save the arguments to disk so that we can regenerate the set at any time using
   #dpLoadSet().
-  dpSaveSetParamList(paramList)
+  dpSaveSetArgList(argList)
   return(newSet)
 }
 
 #' @rdname dpSet
-#' @export
+#' @return \code{dpLoadSet()} (\code{dpLoadBatch()}) creates a \code{dpSet}
+#' (\code{dpBatch}) object described by the arguments stored in the
+#' "dpSet.rData" ("dpBatch.rData") file.
 dpLoadSet = function(setPath) {
-  paramList = dpLoadSetParamList(setPath)
-  return(.dpSetFromParamList(paramList))
+  argList = dpLoadSetArgList(setPath)
+  return(.dpSetFromArgList(argList))
 }
 
-#' @rdname dpSet
-#' @return \code{dpCheckSet()} returns a list containing two character vectors.
-#'   The first vector, named "missingParamters", contains the names of
-#'   parameters required by dpSet() that are missing from the stored set.  The
-#'   second vector, named "extraParamters" contains the names of any extra
-#'   parameters in the stored set, which should be removed.  When
-#'   \code{reportError} is TRUE, the same information is printed as an error
-#'   message to the user, and the list containing "missingParameters" and
-#'   "extraParamters" is returned invisibly (see \code{\link{invisible}}).
-#' @param reportError Boolean value when set to \code{TRUE} causes
-#'   \code{dpCheckSet} to print a message and stops execution.  Set to
-#'   \code{FALSE}, any errors are returned in a list (see code{Value} section,
-#'   below.)
-#' @export
-dpCheckSet = function(setPath, reportError = TRUE) {
-  #Load the call list without validating so we get the call list even if there
-  #is an error in it
-  paramList = dpLoadSetParamList(setPath, validate = FALSE)
-  #Validate the list.  Return the results of the validation to the user.
-  return(.dpValidateSetParamList(paramList, reportError))
-}
 
-#' When \code{dpSet()} is called, the function creates a file called
-#' "dpSet.rData" in the location specified by the \code{setPath} parameter. That
-#' file contains a list of the parameters passed to \code{dpSet()}.  When a set
-#' is reloaded from disk, the list of the parameters is loaded and passed to
-#' \code{dpSet()} to recreate the set.
-#'
-#' \code{dpLoadSetParamList()} returns the list of parameters that was originally
-#' passed to \code{dpSet()} to create the set. By default, the list will be
-#' validated against \code{formals(dpSet)} and an error will be thown if the
-#' call list doesn't match the dpSet function.  If validate=FALSE, the function
-#' will return the loaded parameter list, so that an invalid call list can be
-#' inspected or repaired.
-dpLoadSetParamList = function(setPath, validate = TRUE) {
-  setPath = dpCheckPath(setPath)
-  fileName = dpCheckPath(setPath, "dpSet.rData")
-  load(file = fileName)
-  if(validate) {
-    .dpValidateSetParamList(paramList, reportError = TRUE)
-  }
-  paramList[["setPath"]] = setPath
-  return(paramList)
-}
-
-dpSaveSetParamList = function(paramList, validate = TRUE) {
-  fileName = dpCheckPath(paramList$setPath, "dpSet.rData")
-  if(validate) {
-    .dpValidateSetParamList(paramList, reportError = TRUE)
-  }
-  save(paramList, file = fileName)
-}
-
-# Compares a call list to the results of formals(dpSet).  If reportError is
-# TRUE, function throws an error and stops execution.  If FALSE, errors are
-# returned in a list.  See dpCheckSet() for explanation of error list.
-.dpValidateSetParamList = function(paramList, reportError) {
-  # get parameters from the dpSet
-  paramNames = sort(names(paramList))
-
-  # investigate parameters required by current implementation of dpSet
-  formalNames = sort(names(formals(dpSet)))
-
-  # compare parameter sets and report missing or extra values.
-  badValues = list(missingValues = "", extraValues = "")
-  errorMsg = ""
-  if(!identical(paramNames, formalNames)) {
-    badValues[[1]] = formalNames[!(formalNames %in% paramNames)]
-    badValues[[2]] = paramNames[!(paramNames %in% formalNames)]
-    if(length(needed)>0) {
-      errorMsg = paste0("The following parameters are missing from the stored set: ", paste0(needed, collapse = ", "), "\n  ")
-    }
-    if(length(extras)>0) {
-      errorMsg = paste0(errorMsg, "The following extra parameters should be removed from the stored set: ", paste0(extras, collapse = ", "))
-    }
-  }
-  if(reportError) {
-    if(nchar(errorMsg)>0) {
-      stop(errorMsg)
-    }
-  }
-  return(badValues)
-}
-
+# Checks for some basic agreement between set and the database schema
 .dpValidateSet = function(set) {
 
+# an internal fuction for reporting a missing column
   checkForMissingColumn = function(columnName, columnNames, tableName) {
     if (!(columnName %in% columnNames)) {
       stop(
@@ -206,8 +167,9 @@ dpSaveSetParamList = function(paramList, validate = TRUE) {
     }
   }
 
-  connection = dpConnect(set$connectionParams)
+  connection = dpConnect(set$connectionArgs)
 
+  # check to be sure all tables specified in the set are in the database
   existingTables = RODBC::sqlTables(connection)$TABLE_NAME
   missingTables = !(set$db$tables %in% existingTables)
   if (any(missingTables)) {
@@ -218,6 +180,8 @@ dpSaveSetParamList = function(paramList, validate = TRUE) {
          paste(existingTables, collapse = ", ")
     )
   }
+
+  RODBC::odbcClose(connection)
 
   # ensure batchRowColumn is in dataTable
   checkForMissingColumn(
@@ -263,10 +227,10 @@ dpSaveSetParamList = function(paramList, validate = TRUE) {
 }
 
 # Utility function that converts the results of as.list(match.call()) back to a
-# call object and evaluates the call.  Used to call .dpSet() from a paramList
+# call object and evaluates the call.  Used to call .dpSet() from a argList
 # generated inside dpSet() or loaded from disk by dpLoadSet()
-.dpSetFromParamList = function(paramList) {
-  thisCall = do.call(call, c(list(".dpSet"), paramList))
+.dpSetFromArgList = function(argList) {
+  thisCall = do.call(call, c(list(".dpSet"), argList))
   newSet = eval(thisCall)
   return(newSet)
 }
@@ -276,24 +240,24 @@ dpSaveSetParamList = function(paramList, validate = TRUE) {
 # by dpSet() that generates a dpSet object from the arguments originally passed
 # to dpSet(). dpSet() creates, executes, and saves a call to .dpSet() on disk,
 # in the set's folder.  This saved call can be used to recreate a dpSet object
-# from the same parameters in the future (i.e., "load the dpSet from disk")
+# from the same arguments in the future (i.e., "load the dpSet from disk")
 # using: eval(callLoadedFromDisk). Thus, the resulting dpSet object will always
-# be regenerated with the latest version of .dpSet(). Further, the parameters
-# for the call saved on disk can be easily modified to add or remove parameters,
-# if the parameters required by dpSet() change in the future.  Calls are s3
+# be regenerated with the latest version of .dpSet(). Further, the arguments
+# for the call saved on disk can be easily modified to add or remove arguments,
+# if the arguments required by dpSet() change in the future.  Calls are s3
 # objects built atop named lists, so code can load the call, modify the contents
 # of the list, and resave the call to disk.
 .dpSet = function(...) {
 
-  # creates variables in this environment from the ... parameter
-  unpackDots(...)
+  # creates variables in this environment from the ... argument
+  .unpackDots(...)
 
-  connection = dpConnect(connectionParams)
+  connection = dpConnect(connectionArgs)
 
   newSet =
     list(
       setPath = setPath,
-      connectionParams = connectionParams,
+      connectionArgs = connectionArgs,
       db = list (
         tables = list(
           batchesTableName = batchesTableName,
@@ -326,4 +290,8 @@ dpSaveSetParamList = function(paramList, validate = TRUE) {
 
 }
 
+#' @rdname dpSet
+is.dpSet = function(x) {
+  return(is(x,"dpSet"))
+}
 
