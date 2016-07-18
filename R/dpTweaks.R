@@ -1,4 +1,4 @@
-dpTweak = function(batch, fun, args, reason, after = length(batch$tweaks), updateGlobalEnv = TRUE) {
+dpTweak = function(batch, fun, args, reason, after = length(batch$tweaks)) {
 
  ##### STORE THE FUNCTION IN THE TWEAK!!!!  EVEN IF THE FUNCTION CHANGES IN THE
  ##### FUTURE, THE OLD FUNCTION WILL BE CALLED!!!!!  SO COOL!!!!  Wait...  If
@@ -72,16 +72,16 @@ dpTweak = function(batch, fun, args, reason, after = length(batch$tweaks), updat
 
   # search global environment to see if copies of the batch are stored in
   # memory.  If so, update the tweak lists.
-  if (updateGlobalEnv) {
-    batches = objects(envir = .GlobalEnv)
-    batches = batches[sapply(batches, function(x) is.dpBatch(get(x, envir = .GlobalEnv)))]
-    for (batchName in batches) {
-      if(get(batchName, envir = .GlobalEnv)$setPath == batch$setPath && get(batchName, envir = .GlobalEnv)$batchIDX == batch$batchIDX) {
-        assign(batchName, batch, envir = .GlobalEnv)
-      }
-    }
-  }
-  invisible(batch)
+#   if (updateGlobalEnv) {
+#     batches = objects(envir = .GlobalEnv)
+#     batches = batches[sapply(batches, function(x) is.dpBatch(get(x, envir = .GlobalEnv)))]
+#     for (batchName in batches) {
+#       if(get(batchName, envir = .GlobalEnv)$setPath == batch$setPath && get(batchName, envir = .GlobalEnv)$batchIDX == batch$batchIDX) {
+#         assign(batchName, batch, envir = .GlobalEnv)
+#       }
+#     }
+#   }
+  return(batch)
 }
 
 print.dpTweak = function(x, ...) {

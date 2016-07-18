@@ -210,6 +210,7 @@ dpLoadBatch = function(set, batchName) {
   }
 
   newBatch = list(
+    batchName = as.character(batchRecord[set$db$batchNameColumnName]),
     batchIDX = batchIDX,
     batchRecord = batchRecord,
     batchPath = batchPath,
