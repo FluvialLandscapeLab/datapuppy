@@ -4,17 +4,17 @@
 \alias{dpCommitBatchData}
 \title{Commit (upload) data from a dpBatch to the associated database.}
 \usage{
-dpCommitBatchData(batch, fromDisk = T)
+dpCommitBatchData(batch, fromDisk = TRUE)
 }
 \arguments{
 \item{batch}{a \code{\link{dpBatch}} object.}
 
 \item{fromDisk}{when TRUE, commits the most recent copy of the batch, which
 is loaded from the set folder stored on disk.  When FALSE, commits the
-batch as it is passed to dpCommitBatchData. Tweaks can be saved to disk,
-but not reflected in a batch resident in memory.  "fromDisk = T" as a
-default is intended to ensure that any tweaks that were saved to the batch
-on disk are included in the commit.}
+batch as it is passed to dpCommitBatchData. Because tweaks can be saved to
+disk, but not reflected in a batch object resident in memory.  "fromDisk =
+TRUE" as a default is intended to ensure that any tweaks that were saved to
+the batch on disk are included in the commit.}
 }
 \description{
 Transfers the \code{data.frame} associated with a

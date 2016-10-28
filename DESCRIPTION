@@ -1,11 +1,12 @@
 Package: datapuppy
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1
-Date: 2015-09-27
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Title: Database management for individual researchers/labs
+Version: 0.2
+Date: 2016-10-19
+Author: Geoffrey Poole
+Maintainer: Geoffrey Poole <gpoole@montana.edu>
+Description: DataPuppy allows users to import and archive "batches" of data into a cohesive single database.  It also allows users to "tweak" the data (correct errors, delete bad records, etc.) while maintaining a record of every modification of the data.  Planned functionality will allow the user to reconstruct their database as of any arbitrary date in the past.
+License: 
 LazyData: TRUE
 RoxygenNote: 5.0.1
+Imports: DBI

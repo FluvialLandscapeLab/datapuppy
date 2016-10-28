@@ -57,7 +57,7 @@ dpBatch = function(batchRecord, set, dataValues, rawValues = data.frame()) {
 
   #Test to be sure the batch name is unique...
   sqlCommand = paste0("SELECT COUNT(*) FROM ", set$db$tables$batchesTableName, " WHERE ", set$db$batchNameColumnName, " = '", batchName, "'")
-  if (RODBC::sqlQuery(connection, sqlCommand)[,1] > 0) {
+  if (dpGetQuery(connection, sqlCommand)[,1] > 0) {
     stop("Batch name (from batchRecord argument) must be unique.  A batch named '", batchRecord[set$db$batchNameColumnName], "' already exists.")
   }
 
@@ -99,19 +99,21 @@ dpBatch = function(batchRecord, set, dataValues, rawValues = data.frame()) {
 
   # add the batch record to batchesTable
   sqlCommand = paste0("INSERT INTO ", set$db$tables$batchesTableName, " (", paste0(names(quotedBatchRecord), collapse = ", "), ") VALUES (", paste0(quotedBatchRecord, collapse = ", "), ")")
-  RODBC::sqlQuery(connection, sqlCommand)
+  dpGetQuery(connection, sqlCommand)
 
-  RODBC::odbcClose(connection)
+  dpDisconnect(connection)
 
-  # make a list of the arguments passed to this function
-  argList = as.list(match.call())
-  argList = c(argList[2:(length(argList))])
-  argListNames = names(argList)
+  #   argList = as.list(match.call())
+  #   argList = c(argList[2:(length(argList))])
+  #   argListNames = names(argList)
 
-  # Copy the values into the argList.  We don't want to eval() here because a
-  # promise with random number generation could be passed, so we want to get()
-  # the values from memory.
-  argList = sapply(argListNames, get, envir = environment(), simplify = F)
+
+  # make a list of the names of the arguments passed to this function
+
+  # Copy the values passed to this function into the argList.  We don't want to
+  # eval() the match.call() here because a promise with random number generation
+  # could be passed, so we want to get() the values from the environment.
+  argList = sapply(names(formals(dpBatch)), get, envir = environment(), simplify = F)
 
   newBatch = .dpBatchFromArgList(argList)
 
@@ -142,9 +144,9 @@ dpLoadBatch = function(set, batchName) {
 
   # SQL to select the datum types
   sqlCommand = paste("SELECT", set$db$datumTypeColumnName, "FROM", set$db$tables$typesTableName)
-  datumTypes = as.character(RODBC::sqlQuery(connection, sqlCommand)[,1])
+  datumTypes = as.character(dpGetQuery(connection, sqlCommand)[,1])
 
-  RODBC::odbcClose(connection)
+  dpDisconnect(connection)
 
   # select all of the columns from the data table that are required input by the user
   # (e.g., not primary key, value, batchIDX or metricIDX)
@@ -239,8 +241,8 @@ dpLoadBatch = function(set, batchName) {
 
   # retrieve the batchIDX for the new batch
   connection = dpConnect(set$connectionArgs)
-  batchIDX = RODBC::sqlQuery(connection, sqlCommand)[,set$db$keys$batchesPrimaryKey]
-  RODBC::odbcClose(connection)
+  batchIDX = dpGetQuery(connection, sqlCommand)[,set$db$keys$batchesPrimaryKey]
+  dpDisconnect(connection)
   return(batchIDX)
 }
 

@@ -1,19 +1,19 @@
 randomBatch = function(set) {
   batchRecord = structure(
     list(paste0(letters[sample(1:26, 10, replace = T)], collapse = "")),
-    names = mySet$db$batchNameColumnName
+    names = set$db$batchNameColumnName
   )
   return(dpBatch(batchRecord, set, makeRandomData(set)))
 }
 
 makeRandomData = function(set) {
   connection = dpConnect(set$connectionArgs)
-  metricVector = RODBC::sqlQuery(
+  metricVector = dpGetQuery(
     connection,
     paste0("Select ", set$db$datumTypeColumnName, " FROM ", set$db$tables$typesTableName)
   )[ ,set$db$datumTypeColumnName]
-  RODBC::odbcClose(connection)
-  metricVector = levels(metricVector)
+  dpDisconnect(connection)
+  # metricVector = levels(metricVector)
   metricVector = sample(metricVector, sample(c(1,2,3)))
   startDate = as.POSIXct(runif(1, max = as.integer(Sys.time())), origin = "1970-01-01")
   endDate = startDate + runif(1, min = 86400, max = 10*86400)

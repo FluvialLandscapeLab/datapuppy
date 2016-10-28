@@ -4,24 +4,24 @@
 \alias{dpConnectionArgs}
 \title{Create a dpConnectionArgs object}
 \usage{
-dpConnectionArgs(odbcConnectFunctionName, arguments)
+dpConnectionArgs(drv, ...)
 }
 \arguments{
-\item{odbcConnectFunctionName}{A \code{character} variable specifying the
-function (from the RODBC package) used to connect to a database.}
+\item{drv}{DBIDriver object, name, or DBIConnection.  See \code{drv} argument
+for \code{\link{dbConnect}} in the required \code{DBI} package.}
 
-\item{arguments}{A named \code{list} of arguments passed to
-\code{odbcConnectFunction} where the names in the \code{list} are the names
-of the function arguments.}
+\item{...}{authorization arguments needed by the DBMS instance; these
+typically include user, password, dbname, host, port, etc. For details see
+the appropriate \code{DBIDriver}.}
 }
 \value{
-A \code{dpConnectionArgs} object that can be passed to
-  \code{dpSet()} or \code{dpConnect()}.
+A \code{dpConnectionArgs} object that can be passed to \code{dpSet()}
+  or \code{dpConnect()}.
 }
 \description{
-A dpConnectionArgs object is passed to the \code{dpSet()} function to
-create a dpSet object. pdConnectionArgs objects specify the connect
-function (from the RODBC package) and the arguments passed to that function
-in order to create to the set's database.
+A dpConnectionArgs object is passed to the \code{dpSet()} function to create
+a dpSet object. pdConnectionArgs objects specify the connect function (from
+the DBI package) and the arguments passed to that function in order to create
+to the set's database.
 }
 

@@ -7,7 +7,8 @@
 dpCheckPath(path, fileName = "")
 }
 \arguments{
-\item{path}{a user-specified path, appropriate for the platform upon which R is running.}
+\item{path}{a user-specified path, appropriate for the platform upon which R
+is running.}
 
 \item{fileName}{= a file name to be appended to the end of the path.}
 }
@@ -17,8 +18,9 @@ A validated absolute path with any specified file appended.
 \description{
 Converts a user-specified path to an normalised, absolute path (see
 \code{\link{normalizePath}}. If the user-specified path is a relative path,
-the relative path to the R working directory (see \code{\link{getwd}}).
-Checks to be sure the normalized  path refers to an existing directory. Optionally
-appends a fileName to the path, if specified.
+the path is assumed to be relative to the R working directory (use
+\code{\link{getwd}} to see the working directory). Checks to be sure the
+normalized  path refers to an existing directory. Optionally appends a
+fileName to the path, if specified.
 }
 

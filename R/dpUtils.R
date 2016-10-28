@@ -79,10 +79,12 @@
 #'
 #' Converts a user-specified path to an normalised, absolute path (see
 #' \code{\link{normalizePath}}. If the user-specified path is a relative path,
-#' the relative path to the R working directory (see \code{\link{getwd}}).
-#' Checks to be sure the normalized  path refers to an existing directory. Optionally
-#' appends a fileName to the path, if specified.
-#' @param path a user-specified path, appropriate for the platform upon which R is running.
+#' the path is assumed to be relative to the R working directory (use
+#' \code{\link{getwd}} to see the working directory). Checks to be sure the
+#' normalized  path refers to an existing directory. Optionally appends a
+#' fileName to the path, if specified.
+#' @param path a user-specified path, appropriate for the platform upon which R
+#'   is running.
 #' @param fileName = a file name to be appended to the end of the path.
 #' @return A validated absolute path with any specified file appended.
 dpCheckPath = function(path, fileName = "") {
@@ -165,4 +167,53 @@ calculatedDatumColumns = function(set) {
 
 UTCTime = function(targetTime = Sys.time()) {
   return(format(targetTime, tz="UTC", usetz = TRUE))
+}
+
+.dpOption = function(name) {
+  fullName = paste0("datapuppy.", name)
+  return(options(fullName)[[fullName]])
+}
+
+.dpTransferBatch = function(batch) {
+
+  set = dpLoadSet(batch$setPath)
+
+  connection = dpConnect(set$connectionArgs)
+
+  if(class(connection) == "MySQLConnection") {
+
+    tempFileName = normalizePath(tempfile(), "/", mustWork = F)
+
+    dpGetQuery(
+      connection,
+      paste("DELETE FROM", set$db$tables$dataTableName, "WHERE", set$db$keys$batchesPrimaryKey, "=", batch$batchIDX )
+    )
+
+    write.table(batch$batchData, file = tempFileName, row.names = F, col.names = F, sep = "\t", quote = F)
+    sqlResult = dpGetQuery(
+      connection,
+      paste0(
+        "LOAD DATA LOCAL INFILE '", tempFileName, "' ",
+        "INTO TABLE ", set$db$tables$dataTableName,
+        " (", paste0(names(batch$batchData), collapse = ", "), ")")
+    )
+
+    file.remove(tempFileName)
+    if(length(sqlResult) > 0) stop(sqlResult)
+  } else {
+    sqlAppendTable(connection, dbQuoteIdentifier(connection, set$db$tables$dataTableName), batch$batchData)
+#    stop("Unexpected connection type '", class(connection), "' in .dpTransferBatch() function.  Datapuppy will need to be fixed.  Please contact the maintainer of the datapuppy package.")
+  }
+
+}
+
+.dpValidConnection = function (connection) {
+  if(!(class(connection) %in% .dpOption("connections"))) {
+    stop(
+      "A dbi connection of class '",
+      class(connection),
+      "' is not currently supported by datapuppy.  Supported connection classes are: ",
+      paste(.dpOption("connections"), collapse = ", "),
+      ".")
+  }
 }

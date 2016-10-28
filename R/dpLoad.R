@@ -7,11 +7,11 @@
 #' @param batch a \code{\link{dpBatch}} object.
 #' @param fromDisk when TRUE, commits the most recent copy of the batch, which
 #'   is loaded from the set folder stored on disk.  When FALSE, commits the
-#'   batch as it is passed to dpCommitBatchData. Tweaks can be saved to disk,
-#'   but not reflected in a batch resident in memory.  "fromDisk = T" as a
-#'   default is intended to ensure that any tweaks that were saved to the batch
-#'   on disk are included in the commit.
-dpCommitBatchData = function(batch, fromDisk = T) {
+#'   batch as it is passed to dpCommitBatchData. Because tweaks can be saved to
+#'   disk, but not reflected in a batch object resident in memory.  "fromDisk =
+#'   TRUE" as a default is intended to ensure that any tweaks that were saved to
+#'   the batch on disk are included in the commit.
+dpCommitBatchData = function(batch, fromDisk = TRUE) {
   if(!is.dpBatch(batch)) batch = dpLoadBatch(batch)
 
   set = dpLoadSet(batch$setPath)
@@ -27,7 +27,7 @@ dpCommitBatchData = function(batch, fromDisk = T) {
   connection = dpConnect(set$connectionArgs)
 
   #get the names of valid data types in the types table and their indexes
-  typeData = RODBC::sqlQuery(connection, paste0("SELECT * FROM ", set$db$tables$typesTableName))
+  typeData = dpGetQuery(connection, paste0("SELECT * FROM ", set$db$tables$typesTableName))
   typeNames = as.character(typeData[,set$db$datumTypeColumnName])
   typeIDX = structure(
     typeData[,set$db$keys$typesPrimaryKey],
@@ -83,42 +83,9 @@ dpCommitBatchData = function(batch, fromDisk = T) {
 
   batch$batchData = .dpDateColToCharacter(batch$batchData)
 
-  tempFileName = normalizePath(tempfile(), "/", mustWork = F)
+  dpDisconnect(connection)
 
-  RODBC::sqlQuery(
-    connection,
-    paste("DELETE FROM", set$db$tables$dataTableName, "WHERE", set$db$keys$batchesPrimaryKey, "=", batch$batchIDX )
-  )
-
-  write.table(batch$batchData, file = tempFileName, row.names = F, col.names = F, sep = "\t", quote = F)
-  sqlResult = sqlQuery(
-    connection,
-    paste0(
-      "LOAD DATA LOCAL INFILE '", tempFileName, "' ",
-      "INTO TABLE ", set$db$tables$dataTableName,
-      " (", paste0(names(batch$batchData), collapse = ", "), ")")
-  )
-
-  file.remove(tempFileName)
-  if(length(sqlResult) > 0) stop(sqlResult)
-
-#  RODBC::sqlSave(connection, dat = batch$batchData, tablename = set$db$tables$dataTableName, append = T, rownames = F)
-
-#   RODBCext::sqlExecute(
-#     connection,
-#     paste0(
-#       "INSERT INTO ",
-#       set$db$tables$dataTableName,
-#       "(",
-#       paste(names(batch$batchData), collapse = ", "),
-#       ") VALUES (",
-#       paste0(rep("?", length(names(batch$batchData))), collapse = ", "),
-#       ")"
-#     ),
-#     data = batch$batchData
-#   )
-
-  RODBC::odbcClose(connection)
+  .dpTransferBatch(batch)
 
   save(batch, file = file.path(batch$batchPath, "committed", paste0(gsub(":", "_", UTCTime()), ".rData")))
 }

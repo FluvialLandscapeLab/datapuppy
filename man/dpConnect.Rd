@@ -8,11 +8,11 @@ dpConnect(dpConnectionArgs)
 }
 \arguments{
 \item{dpConnectionArgs}{A \code{dpConnectionArgs} object created by the
-\code{\link{dpConnectionArgs()}} function.}
+\code{\link{dpConnectionArgs}} function.}
 }
 \value{
-An RODBC connection object (see \code{\link{odbcConnect}} in the
-  \code{RODBC} package)
+An DBI connection object (see \code{\link{dbConnect}} in the
+  \code{DBI} package)
 }
 \description{
 Open connections to ODBC databases using a \code{dpConnectionArgs} object
