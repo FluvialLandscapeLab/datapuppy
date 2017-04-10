@@ -189,7 +189,7 @@ UTCTime = function(targetTime = Sys.time()) {
       paste("DELETE FROM", set$db$tables$dataTableName, "WHERE", set$db$keys$batchesPrimaryKey, "=", batch$batchIDX )
     )
 
-    write.table(batch$batchData, file = tempFileName, row.names = F, col.names = F, sep = "\t", quote = F)
+    write.table(batch$batchData, file = tempFileName, row.names = F, col.names = F, sep = "\t", quote = F, na = "\\N")
     sqlResult = dpGetQuery(
       connection,
       paste0(
